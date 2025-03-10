@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Detail";
+}
+<h1>@ViewData["Title"]</h1>
+
+<h2>Market Data Detail</h2>
+
+<table class="table">
+    <tr>
+        <th>Minimum Price</th>
+        <td>@Model.MinPrice</td>
+    </tr>
+    <tr>
+        <th>Maximum Price</th>
+        <td>@Model.MaxPrice</td>
+    </tr>
+    <tr>
+        <th>Average Price</th>
+        <td>@Model.AveragePrice</td>
+    </tr>
+    <tr>
+        <th>Most Expensive Hour</th>
+        <td>@Model.MostExpensiveHour</td>
+    </tr>
+    <tr>
+        <th>Highest Hourly Sum</th>
+        <td>@Model.HighestHourlySum</td>
+    </tr>
+</table>

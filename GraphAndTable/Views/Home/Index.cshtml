@@ -1,0 +1,171 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+<div class="text-center">
+
+    <canvas id="priceChart"></canvas>
+    <table id="dataTable" class="table">
+        <thead id="tableHeader">
+            <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Market Price EX1</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Date</td> 
+                    <td>@item.MarketPriceEX1</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+
+    <script>
+        
+        $(document).ready(function () {
+            $('#dataTable').DataTable({
+                "paging": true,      // Enables pagination
+                "searching": true,   // Enables filtering
+                "ordering": true,    // Enables sorting
+                "order": [[1, "desc"]], // Sort by Date (Column Index 1) by default
+                "lengthMenu": [[10, 25, 50, 100, 200, 500, -1], [10, 25, 50, 100, 200, 500, "All"]],
+                "columnDefs": [
+                    {
+                        "targets": 1,  // Date column index
+                        "render": function (data, type, row) {
+                            if (type === "sort" || type === "type") {
+                                return parseDateString(data);
+                            }
+                            return data; // Show original string for display
+                        }
+                    }
+                ]
+            });
+
+            var chartData = @Html.Raw(Json.Serialize(Model));
+            console.log(chartData);
+
+            // Convert Date Strings to JavaScript Date Objects
+            var fullLabels = chartData.map(item => parseDate(item.date));
+            var fullValues = chartData.map(item => parseFloat(item.marketPriceEX1));
+
+
+            // Register Chart.js and required plugins
+            
+            console.log("ChartZoom registered:", Chart._adapters._date);
+
+            console.log("Chart.js Version:", Chart.version);
+            console.log("Chart Zoom Plugin Loaded:", ChartZoom);
+            console.log("Date Adapter:", Chart._adapters._date);
+
+            // Ensure Chart.js and plugins are loaded
+            // Ensure all necessary Chart.js plugins are registered
+            Chart.register(ChartZoom);
+
+            var displayStart = 0;
+            var displayEnd = 5000; // Initial range
+
+            var ctx = document.getElementById('priceChart').getContext('2d');
+            if (!ctx) {
+                console.error("Canvas element not found!");
+            }
+
+            var priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: fullLabels.slice(displayStart, displayEnd),
+                    datasets: [{
+                        label: 'Market Price',
+                        data: fullValues.slice(displayStart, displayEnd),
+                        borderColor: 'blue',
+                        backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                        borderWidth: 1,
+                        pointRadius: 3,
+                        pointHitRadius: 10,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: "day" },
+                            tooltipFormat: "yyyy-MM-dd HH:mm",
+                            displayFormats: {
+                                day: "yyyy-MM-dd",
+                                hour: "HH:mm",
+                                minute: "HH:mm:ss"
+                            },
+                            ticks: { source: "auto" }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            suggestedMin: 1,
+                            suggestedMax: 300,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+            // 🟢 **Manual Zooming with Scroll**
+            function updateChart() {
+                priceChart.data.labels = fullLabels.slice(displayStart, displayEnd);
+                priceChart.data.datasets[0].data = fullValues.slice(displayStart, displayEnd);
+                priceChart.update();
+            }
+
+            document.getElementById('priceChart').addEventListener('wheel', function (event) {
+                event.preventDefault();
+                if (event.deltaY < 0) { // Scroll up -> Zoom in
+                    if (displayEnd - displayStart > 10) { // Prevent too much zoom
+                        displayStart += 300;
+                        displayEnd -= 300;
+                    }
+                } else { // Scroll down -> Zoom out
+                    if (displayStart > 0) {
+                        displayStart -= 300;
+                        displayEnd += 300;
+                    }
+                }
+                updateChart();
+            });
+        });
+
+
+        function parseDateString(dateString) {
+            let parts = dateString.split(/[\s/:]+/);
+            if (parts.length < 3) return new Date(0);
+
+            let day = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10) - 1;
+            let year = parseInt(parts[2], 10);
+            let hours = parts.length > 3 ? parseInt(parts[3], 10) : 0;
+            let minutes = parts.length > 4 ? parseInt(parts[4], 10) : 0;
+
+            return new Date(year, month, day, hours, minutes).getTime();
+        }
+
+        function parseDate(dateString) {
+            let parts = dateString.split(/[\s/:]+/); // Split by space, slash, and colon
+            if (parts.length < 3) return new Date(0); // Fallback for invalid dates
+
+            let day = parseInt(parts[0], 10);
+            let month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-based
+            let year = parseInt(parts[2], 10);
+            let hours = parts.length > 3 ? parseInt(parts[3], 10) : 0;
+            let minutes = parts.length > 4 ? parseInt(parts[4], 10) : 0;
+
+            return new Date(year, month, day, hours, minutes);
+        }
+    </script>
+}
